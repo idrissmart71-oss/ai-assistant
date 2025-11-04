@@ -19,12 +19,14 @@ const App: React.FC = () => {
     const initializeChat = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/start`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/chat`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: "Initialize STEMROBO Assistant" }),
           }
         );
+        
 
         const data = await res.json();
 
