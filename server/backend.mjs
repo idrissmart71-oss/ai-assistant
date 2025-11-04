@@ -137,7 +137,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-if (!process.env.API_KEY) {
+if (!process.env.GEMINI_API_KEY) {
   throw new Error("API_KEY environment variable not set. Please create a .env file.");
 }
 
