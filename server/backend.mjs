@@ -138,7 +138,7 @@ const port = process.env.PORT || 3001;
 // ✅ CORS for Render + Vercel
 app.use(cors({
   origin: [
-    "https://ai-assistant-ed5op1k7m-idris-projects-711eb9ab.vercel.app",
+    "https://ai-assistant-nine-theta.vercel.app",
     "http://localhost:5173"
   ],
   methods: ["GET", "POST"],
