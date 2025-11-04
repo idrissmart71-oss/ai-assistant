@@ -201,12 +201,18 @@ app.post('/api/chat', async (req, res) => {
 
     // ✅ FIXED LINE (use model directly instead of ai)
     const result = await model.generateContent({ contents: chatInput });
-    const reply = result.response.text();
+
+    // ✅ Properly extract response text from Gemini
+    const reply =
+      result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      result?.response?.text() ||
+      "Sorry, I couldn't generate a response.";
 
     previousMessages.push({ role: "model", parts: [{ text: reply }] });
     chatSessions.set(chatId, previousMessages);
 
     res.json({ text: reply });
+
   } catch (error) {
     console.error('💥 Error during chat message streaming:', error);
     res.status(500).json({ error: 'Failed to process chat message' });
