@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Chat } from '@google/genai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Message } from './types';
 import Header from './components/Header';
 import ChatWindow from './components/ChatWindow';
@@ -18,10 +18,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const initializeChat = async () => {
       try {
-        if (!process.env.API_KEY) {
+        if (!process.env.VITE_GEMINI_API_KEY) {
           throw new Error("API_KEY environment variable not set.");
         }
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenerativeAI({ apiKey: process.env.VITE_GEMINI_API_KEY });
         const chat = ai.chats.create({
           model: 'gemini-2.5-flash',
           config: {
