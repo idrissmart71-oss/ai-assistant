@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 as uuidv4 } from 'uuid';
 import 'dotenv/config';
 
-// System prompt defining the AI's persona and capabilities
+// ✅ System prompt defining the AI's persona and capabilities
 const SYSTEM_PROMPT = `You are an intelligent, polite, and professional AI Chat Assistant named STEMROBO Assistant, created for STEMROBO Technologies Pvt. Ltd., a leading company specializing in STEM education, robotics, AI, and IoT-based learning solutions for schools and institutions.
 
 Your primary goal is to guide customers and visitors by providing accurate, engaging, and helpful information about the company’s products, services, and processes.
@@ -130,43 +130,44 @@ Final Instruction
 
 Always respond as the official AI representative of STEMROBO Technologies Pvt. Ltd., never as a generic chatbot.`;
 
-
+// ✅ Express App Setup
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
+// ✅ CORS for Render + Vercel
+app.use(cors({
+  origin: ["https://stemrobo-ai.vercel.app", "http://localhost:5173"],
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
 app.use(bodyParser.json());
 
+// ✅ Fix: Correct environment variable name
 if (!process.env.GEMINI_API_KEY) {
-  throw new Error("API_KEY environment variable not set. Please create a .env file.");
+  throw new Error("GEMINI_API_KEY environment variable not set. Please create it in Render dashboard.");
 }
 
-const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY });
-const model = 'gemini-2.5-flash';
+// ✅ Fix: Correct Gemini API initialization
+const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-// In-memory store for chat sessions. A database would be used for production persistence.
+// ✅ Store chat sessions in memory
 const chatSessions = new Map();
 
-// Endpoint to start a new chat session
+// ✅ Start new chat session
 app.post('/api/start', (req, res) => {
   try {
     const chatId = uuidv4();
-    const chat = ai.chats.create({
-      model,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-      },
-    });
-    chatSessions.set(chatId, chat);
-    console.log(`New chat session started: ${chatId}`);
+    chatSessions.set(chatId, []);
+    console.log(`🆕 New chat session started: ${chatId}`);
     res.json({ chatId });
-  } catch(error) {
-    console.error('Failed to start chat session:', error);
+  } catch (error) {
+    console.error('❌ Failed to start chat session:', error);
     res.status(500).json({ error: 'Could not initialize chat session.' });
   }
 });
 
-// Endpoint to send a message and stream the response
+// ✅ Handle chat messages
 app.post('/api/chat', async (req, res) => {
   const { chatId, message } = req.body;
 
@@ -178,29 +179,34 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const chat = chatSessions.get(chatId);
-    const stream = await chat.sendMessageStream({ message });
+    const previousMessages = chatSessions.get(chatId);
+    previousMessages.push({ role: "user", parts: [{ text: message }] });
 
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('Transfer-Encoding', 'chunked');
+    const chatInput = [
+      { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
+      ...previousMessages
+    ];
 
-    for await (const chunk of stream) {
-      res.write(chunk.text);
-    }
-    res.end();
+    const result = await model.generateContent({ contents: chatInput });
+    const reply = result.response.text();
+
+    previousMessages.push({ role: "model", parts: [{ text: reply }] });
+    chatSessions.set(chatId, previousMessages);
+
+    res.json({ text: reply });
   } catch (error) {
-    console.error('Error during chat message streaming:', error);
-    // Note: Can't send a JSON error response if headers are already sent.
-    // The connection will likely be terminated by the client on timeout.
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to process chat message' });
-    } else {
-      res.end();
-    }
+    console.error('💥 Error during chat message streaming:', error);
+    res.status(500).json({ error: 'Failed to process chat message' });
   }
 });
 
+// ✅ Root route
+app.get('/', (req, res) => {
+  res.send('✅ STEMROBO AI backend is running successfully!');
+});
+
+// ✅ Start server
 app.listen(port, () => {
-  console.log(`STEMROBO AI backend is running on http://localhost:${port}`);
-  console.log('Ensure the frontend is making requests to this address.');
+  console.log(`🚀 STEMROBO AI backend is running on port ${port}`);
+  console.log('✅ Ensure your frontend is making requests to this Render backend URL.');
 });
