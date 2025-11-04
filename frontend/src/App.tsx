@@ -55,6 +55,7 @@ const App: React.FC = () => {
     initializeChat();
   }, []);
   
+  
 
   // ✅ Handle message send
   const handleSendMessage = useCallback(
