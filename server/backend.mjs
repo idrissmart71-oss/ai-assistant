@@ -136,7 +136,7 @@ const port = process.env.PORT || 3001;
 
 // ✅ CORS for Render + Vercel
 app.use(cors({
-  origin: ["https://stemrobo-ai.vercel.app", "http://localhost:5173"],
+  origin: ["https://ai-assistant-ed5op1k7m-idris-projects-711eb9ab.vercel.app/", "http://localhost:5173"],
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
