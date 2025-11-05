@@ -140,6 +140,7 @@ const port = process.env.PORT || 3001;
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
+      "https://ai-assistant-nine-theta.vercel.app",
       "https://ai-assistant-56fiue5fg-idris-projects-711eb9ab.vercel.app",
       "http://localhost:5173"
     ];
