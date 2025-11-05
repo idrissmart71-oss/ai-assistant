@@ -141,7 +141,7 @@ app.use(cors({
     // Allow all in dev, restrict in prod
     const allowed = [
       "https://ai-assistant-nine-theta.vercel.app",
-      "https://ai-assistant-git-main-idris-projects-711eb9ab.vercel.app",
+      "https://vercel.com/idris-projects-711eb9ab/ai-assistant/9c4KYxo4PdGQWKGHBQBpRGsup5F8",
       "http://localhost:5173"
     ];
     if (!origin || allowed.includes(origin)) return callback(null, true);
@@ -161,7 +161,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 // ✅ Fix: Correct Gemini API initialization
 const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // ✅ Store chat sessions in memory
 const chatSessions = new Map();
