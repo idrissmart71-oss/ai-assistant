@@ -1,12 +1,13 @@
-import 'dotenv/config';
+import { config } from "dotenv";
+config();     // ✅ MUST be first
+
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 as uuidv4 } from 'uuid';
 
-
-// ✅ System prompt defining the AI's persona and capabilities
+// ✅ FULL System prompt EXACTLY as you provided (NOT shortened)
 const SYSTEM_PROMPT = `You are an intelligent, polite, and professional AI Chat Assistant named STEMROBO Assistant, created for STEMROBO Technologies Pvt. Ltd., a leading company specializing in STEM education, robotics, AI, and IoT-based learning solutions for schools and institutions.
 
 Your primary goal is to guide customers and visitors by providing accurate, engaging, and helpful information about the company’s products, services, and processes.
@@ -136,56 +137,60 @@ Always respond as the official AI representative of STEMROBO Technologies Pvt. L
 const app = express();
 const port = process.env.PORT || 3001;
 
-// ✅ CORS for Render + Vercel
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = [
-      "https://ai-assistant-nine-theta.vercel.app",
-      "https://ai-assistant-f555ymn9k-idris-projects-711eb9ab.vercel.app",
-      "https://ai-assistant-56fiue5fg-idris-projects-711eb9ab.vercel.app",
-      "http://localhost:5173"
-    ];
-    if (!origin || allowed.includes(origin)) return callback(null, true);
-    console.warn(`❌ CORS blocked request from: ${origin}`);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-}));
+// ✅ CORS
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowed = [
+        "https://ai-assistant-nine-theta.vercel.app",
+        "https://ai-assistant-f555ymn9k-idris-projects-711eb9ab.vercel.app",
+        "http://localhost:5173"
+      ];
 
+      if (!origin || allowed.includes(origin)) return callback(null, true);
+      console.warn(`❌ CORS blocked request from: ${origin}`);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 app.use(bodyParser.json());
 
-// ✅ Fix: Correct environment variable name
-// ✅ Fix: Correct Gemini API initialization
+
+// ✅ ENV CHECK
 if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable not set.");
+  throw new Error("GEMINI_API_KEY not set. Add it in Render env.");
 }
+
 console.log("Gemini key loaded:", process.env.GEMINI_API_KEY?.slice(0, 10));
 
 const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// ✅ ✅ Correct model here
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// ✅ Correct model
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
 
-// ✅ Store chat sessions in memory
+
+// ✅ Store chat sessions
 const chatSessions = new Map();
 
+
 // ✅ Start new chat session
-app.post('/api/start', (req, res) => {
+app.post("/api/start", (req, res) => {
   try {
     const chatId = uuidv4();
     chatSessions.set(chatId, []);
     console.log(`🆕 New chat session started: ${chatId}`);
     res.json({ chatId });
   } catch (error) {
-    console.error('❌ Failed to start chat session:', error);
-    res.status(500).json({ error: 'Could not initialize chat session.' });
+    console.error("❌ Failed to start chat session:", error);
+    res.status(500).json({ error: "Could not initialize chat session." });
   }
 });
 
-// ✅ Handle chat messages
+
 // ✅ Handle chat messages
 app.post("/api/chat", async (req, res) => {
   const { chatId, message } = req.body;
@@ -200,35 +205,25 @@ app.post("/api/chat", async (req, res) => {
   try {
     const previousMessages = chatSessions.get(chatId);
 
-    // ✅ Save new user message
+    // ✅ Store user’s message
     previousMessages.push({ role: "user", text: message });
 
-    // ✅ Build plain-text chat history
-    const historyText = previousMessages
-      .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
-      .join("\n");
+    // ✅ Build full conversation including system
+    const fullPrompt =
+      SYSTEM_PROMPT +
+      "\n\n" +
+      previousMessages
+        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+        .join("\n") +
+      "\nAssistant:";
 
-    // ✅ Combine with system prompt
-    const chatInput = [
-      { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
-      ...previousMessages
-    ];
-    
-    const result = await model.generateContent({
-      contents: [
-        { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
-        { role: "user", parts: [{ text: message }] },
-      ]
-    });
-    
-    
-    const reply =
-      result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      result?.response?.text() ||
-      "Sorry, I couldn't generate a response.";
-    
+    // ✅ Correct Gemini request
+    const result = await model.generateContent(fullPrompt);
 
-    // ✅ Save assistant answer
+    // ✅ Extract response
+    const reply = result?.response?.text() || "Sorry, I couldn't generate a response.";
+
+    // ✅ Store assistant message
     previousMessages.push({ role: "assistant", text: reply });
     chatSessions.set(chatId, previousMessages);
 
@@ -240,14 +235,15 @@ app.post("/api/chat", async (req, res) => {
 });
 
 
-// ✅ Root route
-app.get('/', (req, res) => {
+// ✅ Root endpoint
+app.get("/", (req, res) => {
   console.log("🛰️ Frontend connected to backend successfully!");
-  res.send('✅ STEMROBO AI backend is running successfully!');
+  res.send("✅ STEMROBO AI backend is running successfully!");
 });
+
 
 // ✅ Start server
 app.listen(port, () => {
   console.log(`🚀 STEMROBO AI backend is running on port ${port}`);
-  console.log('✅ Ensure your frontend is making requests to this Render backend URL.');
+  console.log("✅ Ensure your frontend is using this backend URL.");
 });
