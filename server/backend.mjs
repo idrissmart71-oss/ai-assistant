@@ -163,7 +163,7 @@ if (!process.env.GEMINI_API_KEY) {
 console.log("Gemini key loaded:", process.env.GEMINI_API_KEY?.slice(0, 10));
 // ✅ Fix: Correct Gemini API initialization
 const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // ✅ Store chat sessions in memory
 const chatSessions = new Map();
@@ -210,7 +210,13 @@ app.post("/api/chat", async (req, res) => {
       ...previousMessages
     ];
     
-    const result = await model.generateContent(chatInput);
+    const result = await model.generateContent({
+      contents: [
+        { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
+        { role: "user", parts: [{ text: message }] },
+      ]
+    });
+    
     
     const reply =
       result?.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
